@@ -1,10 +1,10 @@
 import urllib, urllib2
 from bs4 import BeautifulSoup
 from utils import log, save_json, load_json
-
+import os
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 YaBrowser/18.4.1.489 (beta) Yowser/2.5 Safari/537.36"
-
+debug = True
 
 def get_known_refs(known_path):
     return set(load_json(known_path, set()))
@@ -22,12 +22,17 @@ def get_page(url):
     page = urllib2.urlopen(request)
     data = page.read()
     return data
-
+    
 
 def get_local_page():
-    with open("page.html", "r") as f:
-        return f.read()
+    pass
+    #with open(page_path, "r") as f:
+    #    return f.read()
 
+def save_to_local_page(data):
+    pass
+    #with open(page_path, "w") as f:
+    #    return f.write(data)
 
 def has_class(el, str):
     classes = el.attrs.get("class", [])
@@ -62,26 +67,40 @@ def get_link_href(el):
 
 
 def get_flat_refs(data):
+    global debug
     soup = BeautifulSoup(data, 'html.parser')
     links = soup.find_all('a')
-
+    if debug:
+        log("      links "+str(len(links)))
     flat_links = filter(is_flat_link, links)
 
     flat_refs = map(get_link_href, flat_links)
-    return set(filter(lambda h: h is not None, flat_refs))
+    return set(filter(lambda h: h is not None, flat_refs)), len(links)
+
 
 
 def parse(known_path, url):
-    page_data = get_page(url)
+    global debug
+    try:
+        page_data = get_page(url)
+    except Exception as e: # urllib2.HTTPError, e:
+        log(u"EXCEPTION get_page:")
+        print(e) #print "Unexpected error:", sys.exc_info()[0]
+        if debug:
+            raise
+        return None, None
+    # log(page_data)
+    #save_to_local_page(page_data)
     # page_data = get_local_page()
-    refs = get_flat_refs(page_data)
+    refs, links = get_flat_refs(page_data)
     known_refs = get_known_refs(known_path)
     new_refs = refs - known_refs
-    log("Got {} refs(new: {}, already known: {})".format(len(refs), 
-                                                         len(new_refs), 
-                                                         len(known_refs)))
+    log("    {} cian refs(new: {}, known: {})  links: {}".format(len(refs),
+                                                                 len(new_refs),
+                                                                 len(known_refs),
+                                                                 links))
     if len(new_refs) > 0:
         new_known_refs = known_refs.union(new_refs)
         save_known_refs(known_path, new_known_refs)
-        return list(new_refs)
-    return []
+        return list(new_refs), links
+    return [], links
