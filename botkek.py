@@ -1,9 +1,14 @@
 import telebot
 from threading import Thread
 import time
+import cian
+import os
 
 TERMINATE = False
 ID = None
+data_dir = os.path.join(os.path.dirname(__file__), "data")
+KNOWN_PATH = os.path.join(data_dir, 'known.json')
+CIAN_URL = 'https://www.cian.ru/cat.php?currency=2&deal_type=rent&engine_version=2&maxprice=35000&offer_type=flat&region=1&room1=1&room2=1&type=4'
 
 class CianParser(Thread):
     def __init__( self, bot):
@@ -15,7 +20,13 @@ class CianParser(Thread):
         while not TERMINATE:
             time.sleep(1)
             if ID:
-                print ID
+                refs, page_links = cian.parse(KNOWN_PATH, CIAN_URL)
+                if refs:
+                    print refs
+                for ref in refs:
+                    bot.send_message( ID, ref )
+                time.sleep( 60 )
+
 
 def main():
     bot = telebot.TeleBot("534840844:AAH-SUIsnwWIjn4IGB9UD-blwegM1iYqXRA")
@@ -34,7 +45,7 @@ def main():
     cian_parser = CianParser( bot )
     cian_parser.daemon = True
     cian_parser.start()
- 
+
     print "START TELE BOT "
     bot.polling()
 
