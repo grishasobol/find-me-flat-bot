@@ -1,6 +1,8 @@
 import telebot
 from threading import Thread
+import time
 
+TERMINATE = False
 ID = None
 
 class CianParser(Thread):
@@ -9,8 +11,9 @@ class CianParser(Thread):
         self.bot = bot
 
     def run( slef):
-        while True:
-            gevent.sleep(1)
+        print "START CIAN PARSER"
+        while not TERMINATE:
+            time.sleep(1)
             if ID:
                 print ID
 
@@ -27,9 +30,18 @@ def main():
     def echo_all(message):
         bot.reply_to(message, message.text)
 
+
     cian_parser = CianParser( bot )
-    cian_parser.run()
-    tb_process = Tread( target=bot.polling )
+    cian_parser.daemon = True
+    cian_parser.start()
+ 
+    print "START TELE BOT "
+    bot.polling()
+
+    global TERMINATE
+    TERMINATE = True
+
+    print "Wait cian parser"
     cian_parser.join()
 
 
