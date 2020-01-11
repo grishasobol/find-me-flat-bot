@@ -107,7 +107,7 @@ def main():
         s = message.text
         try:
             ref = re.search( '\/info (.*)', s).group(1)
-            bot.reply_to(message, 'INFO: {}'.format( flat_info ))
+            bot.reply_to(message, 'INFO: {}'.format( flat_info( ref ) ))
         except:
             bot.reply_to(message, '=((( cannot collect info')
 
