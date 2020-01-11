@@ -5,6 +5,8 @@ import cian
 import os
 import argparse
 import googapi
+import re
+import json
 
 TERMINATE = False
 ID = None
@@ -13,6 +15,7 @@ KNOWN_PATH = os.path.join(data_dir, 'known.json')
 CIAN_URL = 'https://www.cian.ru/cat.php?currency=2&deal_type=rent&engine_version=2&maxprice=35000&offer_type=flat&region=1&room1=1&room2=1&type=4'
 TELE_KEY = None
 GOOGLE_KEY = None
+POINTS = []
 
 class CianParser(Thread):
     def __init__( self, bot):
@@ -58,6 +61,23 @@ def main():
     @bot.message_handler(commands=['time'])
     def send_time(message):
         bot.reply_to(message, google.get_travel_time('Moscow', 'Protvino'))
+
+    @bot.message_handler(commands=['addpoint'])
+    def addpoint(message):
+        s = message.text
+        m = re.search('\/addpoint (.*)', s)
+        try:
+            point = m.group(1)
+            point = json.loads(point)
+            int(point[1])
+        except:
+            bot.reply_to(message, 'Ivalid message')
+            return
+
+        POINTS.append( point )
+        bot.reply_to( message, 'Add new point with address: {}; and time: {}'.format(point[0], point[1]))
+
+
 
     @bot.message_handler(func=lambda message: True)
     def echo_all(message):
