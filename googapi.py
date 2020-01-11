@@ -13,4 +13,4 @@ class GoogleAPI:
                                                    destin,
                                                    mode=mode,
                                                    departure_time=dep_time)
-        return directions_result[0]['legs'][0]['duration']['value']
+        return directions_result[0]['legs'][0]['duration']['value'] / 60
