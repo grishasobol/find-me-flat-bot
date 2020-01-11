@@ -15,7 +15,7 @@ class CianParser(Thread):
         Thread.__init__(self)
         self.bot = bot
 
-    def run( slef):
+    def run( self):
         print "START CIAN PARSER"
         while not TERMINATE:
             time.sleep(1)
@@ -24,7 +24,7 @@ class CianParser(Thread):
                 if refs:
                     print refs
                 for ref in refs:
-                    bot.send_message( ID, ref )
+                    self.bot.send_message( ID, ref )
                 time.sleep( 60 )
 
 
