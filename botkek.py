@@ -8,6 +8,10 @@ import googapi
 import re
 import json
 
+import sys  
+reload(sys)  
+sys.setdefaultencoding('utf-8')
+
 TERMINATE = False
 ID = None
 data_dir = os.path.join(os.path.dirname(__file__), "data")
@@ -75,7 +79,8 @@ def main():
             return
 
         POINTS.append( point )
-        bot.reply_to( message, 'Add new point with address: {}; and time: {}'.format(point[0], point[1]))
+        print type(point[0]), point
+        bot.reply_to( message, 'Add new point with address: {}; and time: {}'.format( point[0], point[1]))
 
 
 
