@@ -20,23 +20,30 @@ CIAN_URL = 'https://www.cian.ru/cat.php?currency=2&deal_type=rent&engine_version
 TELE_KEY = None
 GOOGLE_KEY = None
 GOOGLE_API = None
+USE_GOOGLE_API = True
 POINTS = []
 
 
 def flat_info( ref ):
     data = cian.get_page( ref )
-    address = re.search( '<div data\-name\=\"Geo\".*?content=(\".*?\")', data ).group(1)
+    address = unicode(re.search( '<div data\-name\=\"Geo\".*?content=\"(.*?)\"', data ).group(1))
     info = { 'address': address }
     for point in POINTS:
         info[point[0]] = GOOGLE_API.get_travel_time( address, point[0] )
     return info
 
-def flat_is_suitable( ref ):
-    info = flat_info( ref )
+def flat_is_suitable( info ):
     for point in POINTS:
-        if int(point[1]) > info[point[0]]:
-            return false
-    return true
+        if int(point[1]) < info[point[0]]:
+            return False
+    return True
+
+def flat_info_to_str( flat_info ):
+    info = flat_info.copy()
+    answer = 'Address: {}\n'.format( info.pop('address', None) )
+    for k in info.keys():
+        answer += 'Time = {}min for {}\n'.format( info[k], k)
+    return answer
 
 
 class CianParser(Thread):
@@ -56,16 +63,33 @@ class CianParser(Thread):
             if refs:
                 print refs
             for ref in refs:
-                self.bot.send_message( ID, ref )
+                if TERMINATE:
+                    break
+                answer = ref
+                if USE_GOOGLE_API:
+                    try:
+                        info = flat_info( ref )
+                        if not flat_is_suitable( info ):
+                            continue
+                        answer += '\n' + flat_info_to_str( info )
+                    except:
+                        print 'Cannot get flat info {}'.format( ref)
+                        continue
+                self.bot.send_message( ID, answer )
+                if USE_GOOGLE_API:
+                    time.sleep( 30 )
             time.sleep( 60 )
 
 
 def main():
     parser = argparse.ArgumentParser(description='wrapper')
+    parser.add_argument('--cianurl', help='Ref to cian web site search', required=True)
     parser.add_argument('--telekey', help='API key for lelegram bot', required=True)
     parser.add_argument('--googlekey', help='API key for google services')
     args = parser.parse_args()
 
+    global CIAN_URL
+    CIAN_URL = args.cianurl
     global TELE_KEY
     TELE_KEY = args.telekey
     global GOOGLE_KEY
@@ -98,7 +122,6 @@ def main():
             return
 
         POINTS.append( point )
-        print type(point[0]), point
         bot.reply_to( message, 'Add new point with address: {}; and time: {}'.format( point[0], point[1]))
 
 
@@ -107,7 +130,10 @@ def main():
         s = message.text
         try:
             ref = re.search( '\/info (.*)', s).group(1)
-            bot.reply_to(message, 'INFO: {}'.format( flat_info( ref ) ))
+            info = flat_info( ref )
+            answer = 'INFO FOR ' + ref + '\n'
+            answer += flat_info_to_str( info )
+            bot.reply_to(message, answer)
         except:
             bot.reply_to(message, '=((( cannot collect info')
 
