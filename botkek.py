@@ -24,6 +24,22 @@ USE_GOOGLE_API = True
 POINTS = []
 
 
+def safe_reply_to( bot, message, answer):
+    try:
+        bot.reply_to( message, answer )
+        return True
+    except:
+        print 'Want to send:\n{}\nBut cannot access telegram =('.format( answer )
+        return False
+
+def safe_send_message( bot, chat_id, message):
+    try:
+        bot.send_message( chat_id, message )
+        return True
+    except:
+        print 'Want to send:\n{}\nBut cannot access telegram =('.format( message )
+        return False
+
 def flat_info( ref ):
     data = cian.get_page( ref )
     address = unicode(re.search( '<div data\-name\=\"Geo\".*?content=\"(.*?)\"', data ).group(1))
@@ -58,8 +74,10 @@ class CianParser(Thread):
 
             if not ID:
                 continue
-
-            refs, page_links = cian.parse(KNOWN_PATH, CIAN_URL)
+            try:
+                refs, page_links = cian.parse(KNOWN_PATH, CIAN_URL)
+            except:
+                continue
             if refs:
                 print refs
             for ref in refs:
@@ -75,10 +93,12 @@ class CianParser(Thread):
                     except:
                         print 'Cannot get flat info {}'.format( ref)
                         continue
-                self.bot.send_message( ID, answer )
+                safe_send_message( self.bot, ID, answer )
                 if USE_GOOGLE_API:
                     time.sleep( 30 )
             time.sleep( 60 )
+
+
 
 
 def main():
@@ -99,15 +119,12 @@ def main():
     GOOGLE_API = googapi.GoogleAPI( GOOGLE_KEY )
     bot = telebot.TeleBot( TELE_KEY )
 
+
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
         global ID
         ID = message.chat.id
-        bot.reply_to(message, "Howdy, how are you doing?")
-
-    @bot.message_handler(commands=['time'])
-    def send_time(message):
-        bot.reply_to(message, GOOGLE_API.get_travel_time('Moscow', 'Protvino'))
+        safe_reply_to( bot, message, "Hello!!!, I'm starting to search flat for you")
 
     @bot.message_handler(commands=['addpoint'])
     def addpoint(message):
@@ -118,12 +135,11 @@ def main():
             point = json.loads(point)
             int(point[1])
         except:
-            bot.reply_to(message, 'Ivalid message')
+            safe_reply_to( bot, message, 'Ivalid message')
             return
 
         POINTS.append( point )
         bot.reply_to( message, 'Add new point with address: {}; and time: {}'.format( point[0], point[1]))
-
 
     @bot.message_handler(commands=['info'])
     def send_info(message):
@@ -135,7 +151,7 @@ def main():
             answer += flat_info_to_str( info )
             bot.reply_to(message, answer)
         except:
-            bot.reply_to(message, '=((( cannot collect info')
+            safe_reply_to( bot, message, '=((( cannot collect info')
 
 
     @bot.message_handler(func=lambda message: True)
